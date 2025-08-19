@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTIFree Scientific Calculator</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --key: #1f2937;
+      --key-alt: #374151;
+      --accent: #22c55e;
+      --danger: #ef4444;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    .calc {
+      width: min(420px, 95vw);
+      background: var(--panel);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      overflow: hidden;
+      border: 1px solid #0b1220;
+    }
+    .header {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0b1220;
+    }
+    .brand {
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .screen {
+      padding: 18px;
+      text-align: right;
+      background: #0b1220;
+      border-top: 1px solid #111827;
+      border-bottom: 1px solid #111827;
+    }
+    .expr {
+      font-size: 14px;
+      color: var(--muted);
+      min-height: 20px;
+      word-break: break-all;
+    }
+    .result {
+      font-size: 32px;
+      font-weight: 700;
+      min-height: 42px;
+      word-break: break-all;
+    }
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      padding: 14px;
+    }
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 10px;
+      color: var(--text);
+      background: var(--key);
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.06s ease, background 0.2s ease;
+      box-shadow: 0 3px 0 rgba(0,0,0,0.35);
+      user-select: none;
+    }
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.35);
+    }
+    .op {
+      background: var(--key-alt);
+    }
+    .accent {
+      background: var(--accent);
+      color: #0b1220;
+      font-weight: 800;
+    }
+    .danger {
+      background: var(--danger);
+    }
+    .span-2 {
+      grid-column: span 2;
+    }
+    .footer {
+      padding: 8px 14px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="calc" role="application" aria-label="CTIFree Scientific Calculator">
+    <div class="header">
+      <div class="brand">CTIFree Calculator</div>
+      <button id="toggle-mode" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:12px">
+        Scientific • Deg
+      </button>
+    </div>
+    <div class="screen" aria-live="polite">
+      <div id="expr" class="expr"></div>
+      <div id="result" class="result">0</div>
+    </div>
+    <div class="keys">
+      <!-- Row 1 -->
+      <button class="danger">C</button>
+      <button class="op">(</button>
+      <button class="op">)</button>
+      <button class="op">/</button>
+      <button class="op">%</button>
+      <!-- Row 2 -->
+      <button>7</button>
+      <button>8</button>
+      <button>9</button>
+      <button class="op">×</button>
+      <button class="op">√</button>
+      <!-- Row 3 -->
+      <button>4</button>
+      <button>5</button>
+      <button>6</button>
+      <button class="op">-</button>
+      <button class="op">^</button>
+      <!-- Row 4 -->
+      <button>1</button>
+      <button>2</button>
+      <button>3</button>
+      <button class="op">+</button>
+      <button class="op">!</button>
+      <!-- Row 5 -->
+      <button class="span-2">0</button>
+      <button>.</button>
+      <button class="op">=</button>
+      <button class="accent">DEL</button>
+    </div>
+    <div class="footer">
+      Made with ❤️ by CTIFree
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const exprEl = document.getElementById('expr');
+    const resultEl = document.getElementById('result');
+    const toggleBtn = document.getElementById('toggle-mode');
+    let currentExpression = '';
+    let isDeg = true;
+
+    // Toggle Deg/Rad
+    toggleBtn.addEventListener('click', () => {
+      isDeg = !isDeg;
+      toggleBtn.textContent = `Scientific • ${isDeg ? 'Deg' : 'Rad'}`;
+    });
+
+    // Button Click Handler
+    document.querySelectorAll('.keys button').forEach(button => {
+      button.addEventListener('click', () => {
+        const value = button.textContent;
+        
+        if (value === 'C') {
+          // Clear All
+          currentExpression = '';
+          exprEl.textContent = '';
+          resultEl.textContent = '0';
+        } else if (value === 'DEL') {
+          // Delete Last Character
+          currentExpression = currentExpression.slice(0, -1);
+          exprEl.textContent = currentExpression;
+        } else if (value === '=') {
+          // Calculate Result
+          try {
+            const expr = currentExpression
+              .replace(/×/g, '*')
+              .replace(/√/g, 'Math.sqrt')
+              .replace(/\^/g, '**')
+              .replace(/(\d+)!/g, 'factorial($1)'); 
+            
+            // Custom factorial function
+            function factorial(n) {
+              if (n < 0) return NaN;
+              if (n === 0 || n === 1) return 1;
+              let result = 1;
+              for (let i = 2; i <= n; i++) {
+                result *= i;
+              }
+              return result;
+            }
+            
+            const result = eval(expr);
+            resultEl.textContent = result;
+          } catch (error) {
+            resultEl.textContent = 'Error';
+          }
+        } else {
+          // Append to Expression
+          currentExpression += value;
+          exprEl.textContent = currentExpression;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
